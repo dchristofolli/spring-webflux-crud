@@ -1,0 +1,36 @@
+plugins {
+    id "org.springframework.boot" version "${springBootVersion}"
+    id "io.spring.dependency-management" version "${dependencyManagementVersion}"
+    id 'java'
+}
+
+group = 'com.dchristofolli'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation "io.r2dbc:r2dbc-postgresql:${r2dbcPostgresVersion}"
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation "io.projectreactor:reactor-tools:${reactorToolsVersion}"
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation "io.projectreactor.tools:blockhound:${blockHoundVersion}"
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
