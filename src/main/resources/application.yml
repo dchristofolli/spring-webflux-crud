@@ -12,6 +12,3 @@ logging:
   level:
     io.r2dbc.postgresql.QUERY: DEBUG
     io.r2dbc.postgresql.PARAM: DEBUG
-server:
-  error:
-    include-stacktrace: on_param

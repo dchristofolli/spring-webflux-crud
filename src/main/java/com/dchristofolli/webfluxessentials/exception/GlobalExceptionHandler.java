@@ -1,5 +1,6 @@
 package com.dchristofolli.webfluxessentials.exception;
 
+import io.netty.util.internal.StringUtil;
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -13,10 +14,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.*;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.Optional;
 
-@SuppressWarnings("ALL")
 @Component
 @Order(-2)
 public class GlobalExceptionHandler extends AbstractErrorWebExceptionHandler {
@@ -33,10 +32,19 @@ public class GlobalExceptionHandler extends AbstractErrorWebExceptionHandler {
     }
 
     private Mono<ServerResponse> formatErrorResponse(ServerRequest request) {
-        Map<String, Object> errorAttributes = getErrorAttributes(request, ErrorAttributeOptions.defaults());
-        int status = (int) Optional.ofNullable(errorAttributes.get("status")).orElse(500);
-        return ServerResponse.status(status)
+        var query = request.uri().getQuery();
+        var errorAttributeOptions = isTraceEnabled(query) ?
+            ErrorAttributeOptions.of(ErrorAttributeOptions.Include.STACK_TRACE) :
+            ErrorAttributeOptions.defaults();
+        var errorAttributes = getErrorAttributes(request, errorAttributeOptions);
+        var status = (int) Optional.ofNullable(errorAttributes.get("status")).orElse(500);
+        return ServerResponse
+            .status(status)
             .contentType(MediaType.APPLICATION_JSON)
             .body(BodyInserters.fromValue(errorAttributes));
+    }
+
+    private boolean isTraceEnabled(String query) {
+        return !StringUtil.isNullOrEmpty(query) && query.contains("trace=truce");
     }
 }
