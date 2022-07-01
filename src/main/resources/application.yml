@@ -8,7 +8,7 @@ spring:
       on-profile: default
   devtools:
     add-properties: true
-logging:
-  level:
-    io.r2dbc.postgresql.QUERY: DEBUG
-    io.r2dbc.postgresql.PARAM: DEBUG
+#logging:
+#  level:
+#    io.r2dbc.postgresql.QUERY: DEBUG
+#    io.r2dbc.postgresql.PARAM: DEBUG

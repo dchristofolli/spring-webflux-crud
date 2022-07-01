@@ -36,6 +36,13 @@ public class GameController {
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PutMapping(path = {"id"}, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<Void> update(@PathVariable int id,
+                             @Valid @RequestBody Game game) {
+        return gameService.update(game.withId(id));
+    }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping(path = "{id}")
     public Mono<Void> delete(@PathVariable int id) {
         return gameService.delete(id);
