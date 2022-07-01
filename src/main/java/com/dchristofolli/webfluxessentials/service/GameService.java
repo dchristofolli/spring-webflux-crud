@@ -35,10 +35,8 @@ public class GameService {
     }
 
     public Mono<Void> update(Game game) {
-        return gameRepository.findById(game.getId())
-            .map(foundGame -> game)
+        return findById(game.getId())
             .flatMap(gameRepository::save)
-            .log()
             .then();
     }
 
