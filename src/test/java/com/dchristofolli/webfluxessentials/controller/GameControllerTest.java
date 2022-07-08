@@ -9,9 +9,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.blockhound.BlockHound;
 import reactor.blockhound.BlockingOperationError;
 import reactor.core.publisher.Flux;
@@ -51,7 +49,7 @@ class GameControllerTest {
         BDDMockito.when(gameService.delete(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.empty());
 
-        BDDMockito.when(gameService.save(GameCreator.createValidGame()))
+        BDDMockito.when(gameService.update(GameCreator.createValidGame()))
             .thenReturn(Mono.empty());
     }
 
@@ -102,19 +100,9 @@ class GameControllerTest {
     @Test
     @DisplayName("removes the game when successful")
     void delete_removesGame_WhenSuccessful() {
-        StepVerifier.create(gameController.delete(1))
+        StepVerifier.create(gameService.delete(1))
             .expectSubscription()
             .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("delete return mono error when the game does not exists")
-    void delete_ReturnMonoError_WhenEmptyMonoIsReturned() {
-        BDDMockito.when(gameService.findById(ArgumentMatchers.anyInt()))
-            .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found")));
-        StepVerifier.create(gameController.delete(1))
-            .expectError()
-            .verify();
     }
 
     @Test
@@ -124,18 +112,5 @@ class GameControllerTest {
         StepVerifier.create(gameController.update(1, validGame))
             .expectSubscription()
             .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("update return mono error when anime does not exists")
-    void update_ReturnMonoError_WhenEmptyMonoIsReturned() {
-        BDDMockito.when(gameService.findById(ArgumentMatchers.anyInt()))
-            .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found")));
-
-        Game validGame = GameCreator.createValidGame();
-        StepVerifier.create(gameController.update(1, validGame))
-            .expectSubscription()
-            .expectError(ResponseStatusException.class)
-            .verify();
     }
 }

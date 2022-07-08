@@ -26,12 +26,7 @@ public class GameService {
     }
 
     public Mono<Game> save(Game game) {
-        return gameRepository.save(game)
-            .log();
-    }
-
-    public <T> Mono<T> monoResponseStatusNotFoundException() {
-        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        return gameRepository.save(game);
     }
 
     public Mono<Void> update(Game game) {
@@ -43,5 +38,8 @@ public class GameService {
     public Mono<Void> delete(int id) {
         return findById(id)
             .flatMap(gameRepository::delete);
+    }
+    private  <T> Mono<T> monoResponseStatusNotFoundException() {
+        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
     }
 }

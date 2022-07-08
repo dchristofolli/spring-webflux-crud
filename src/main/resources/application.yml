@@ -3,11 +3,10 @@ spring:
     url: r2dbc:postgresql://localhost:5432/postgres?schema=game
     username: root
     password: root
-  config:
-    activate:
-      on-profile: default
   devtools:
     add-properties: true
+  profiles:
+    active: dev
 #logging:
 #  level:
 #    io.r2dbc.postgresql.QUERY: DEBUG
