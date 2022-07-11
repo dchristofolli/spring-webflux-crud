@@ -2,7 +2,6 @@ package com.dchristofolli.webfluxessentials.integration;
 
 import com.dchristofolli.webfluxessentials.domain.Game;
 import com.dchristofolli.webfluxessentials.exception.CustomAttributes;
-import com.dchristofolli.webfluxessentials.exception.GlobalExceptionHandler;
 import com.dchristofolli.webfluxessentials.repository.GameRepository;
 import com.dchristofolli.webfluxessentials.service.GameService;
 import com.dchristofolli.webfluxessentials.util.GameCreator;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -33,8 +33,7 @@ class GameControllerIT {
     private GameRepository gameRepository;
 
     @MockBean
-    private GlobalExceptionHandler globalExceptionHandler;
-
+    private WebProperties.Resources resources;
     @Autowired
     private WebTestClient testClient;
 
@@ -103,8 +102,6 @@ class GameControllerIT {
             .get()
             .uri("/games/{id}", 1)
             .exchange()
-            .expectStatus().isNotFound()
-            .expectBody()
-            .jsonPath("$.status").isEqualTo(404);
+            .expectStatus().isNotFound();
     }
 }

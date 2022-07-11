@@ -7,6 +7,9 @@ spring:
     add-properties: true
   profiles:
     active: dev
+logging:
+  level:
+    web: DEBUG
 #logging:
 #  level:
 #    io.r2dbc.postgresql.QUERY: DEBUG
