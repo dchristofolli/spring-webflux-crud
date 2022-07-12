@@ -14,8 +14,10 @@ import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.blockhound.BlockHound;
 import reactor.blockhound.BlockingOperationError;
 import reactor.core.publisher.Flux;
@@ -50,6 +52,12 @@ class GameControllerIT {
             .thenReturn(Flux.just(game));
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.just(game));
+        BDDMockito.when(gameRepository.save(GameCreator.createGameToBeSaved()))
+            .thenReturn(Mono.just(game));
+        BDDMockito.when(gameRepository.delete(ArgumentMatchers.any(Game.class)))
+            .thenReturn(Mono.empty());
+        BDDMockito.when(gameRepository.save(GameCreator.createValidGame()))
+            .thenReturn(Mono.empty());
     }
 
     @Test
@@ -95,13 +103,104 @@ class GameControllerIT {
 
     @Test
     @DisplayName("findById throws exception when game does not exist")
-    void findById_ThrowsException_WhenEmptyMonoIsReturned() {
+    void findById_ThrowsException_WhenGameDoesNotExist() {
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.empty());
         testClient
             .get()
             .uri("/games/{id}", 1)
             .exchange()
-            .expectStatus().isNotFound();
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(404)
+            .jsonPath("$.error").isEqualTo("Not Found")
+            .jsonPath("$.message").isEqualTo("404 NOT_FOUND \"Game not found\"")
+            .jsonPath("$.developerMessage").isEqualTo("A ResponseStatusException happened");
+    }
+
+    @Test
+    @DisplayName("save creates a game when successful")
+    void save_CreatesGame_WhenSuccessful() {
+        var gameToBeSaved = GameCreator.createGameToBeSaved();
+        testClient
+            .post()
+            .uri("/games")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(BodyInserters.fromValue(gameToBeSaved))
+            .exchange()
+            .expectStatus().isCreated()
+            .expectBody(Game.class)
+            .isEqualTo(game);
+    }
+
+    @Test
+    @DisplayName("save returns mono error with bad request when name is empty")
+    void save_ReturnsError_WhenNameIsEmpty() {
+        var gameToBeSaved = GameCreator.createGameToBeSaved().withName("");
+        testClient
+            .post()
+            .uri("/games")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(BodyInserters.fromValue(gameToBeSaved))
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(400)
+            .jsonPath("$.developerMessage").isEqualTo("A ResponseStatusException happened");
+    }
+
+    @Test
+    @DisplayName("removes the game when successful")
+    void delete_removesGame_WhenSuccessful() {
+        testClient
+            .delete()
+            .uri("/games/{id}", 1)
+            .exchange()
+            .expectStatus().isNoContent();
+    }
+
+    @Test
+    @DisplayName("delete return mono error when the game does not exists")
+    void delete_ReturnMonoError_WhenEmptyMonoIsReturned() {
+        BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
+            .thenReturn(Mono.empty());
+        testClient
+            .delete()
+            .uri("/games/{id}", 1)
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(404)
+            .jsonPath("$.developerMessage").isEqualTo("A ResponseStatusException happened");
+    }
+
+    @Test
+    @DisplayName("update save updated game and returns empty mono when successful")
+    void update_SaveUpdatedGame_WhenSuccessful() {
+        testClient
+            .put()
+            .uri("/games/{id}", 1)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(BodyInserters.fromValue(game))
+            .exchange()
+            .expectStatus().isNoContent();
+    }
+
+    @Test
+    @DisplayName("update returns mono error when anime does not exists")
+    void update_ReturnMonoError_WhenEmptyMonoIsReturned() {
+        BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
+            .thenReturn(Mono.empty());
+
+        testClient
+            .put()
+            .uri("/games/{id}", 1)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(BodyInserters.fromValue(game))
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(404)
+            .jsonPath("$.developerMessage").isEqualTo("A ResponseStatusException happened");
     }
 }

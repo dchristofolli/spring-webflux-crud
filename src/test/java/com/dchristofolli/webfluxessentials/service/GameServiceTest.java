@@ -58,7 +58,7 @@ class GameServiceTest {
     void blockHoundWorks() {
         try {
             FutureTask<?> task = new FutureTask<>(() -> {
-                Thread.sleep(0);
+                Thread.sleep(0);//NOSONAR
                 return "";
             });
             Schedulers.parallel().schedule(task);
@@ -117,6 +117,7 @@ class GameServiceTest {
             .expectSubscription()
             .verifyComplete();
     }
+
     @Test
     @DisplayName("delete return mono error when the game does not exists")
     void delete_ReturnMonoError_WhenEmptyMonoIsReturned() {
@@ -126,6 +127,7 @@ class GameServiceTest {
             .expectError(ResponseStatusException.class)
             .verify();
     }
+
     @Test
     @DisplayName("update save updated game and returns empty mono when successful")
     void update_SaveUpdatedGame_WhenSuccessful() {
@@ -134,6 +136,7 @@ class GameServiceTest {
             .expectSubscription()
             .verifyComplete();
     }
+
     @Test
     @DisplayName("update return mono error when anime does not exists")
     void update_ReturnMonoError_WhenEmptyMonoIsReturned() {
