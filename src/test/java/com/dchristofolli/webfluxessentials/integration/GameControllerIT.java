@@ -1,9 +1,7 @@
 package com.dchristofolli.webfluxessentials.integration;
 
 import com.dchristofolli.webfluxessentials.domain.Game;
-import com.dchristofolli.webfluxessentials.exception.CustomAttributes;
 import com.dchristofolli.webfluxessentials.repository.GameRepository;
-import com.dchristofolli.webfluxessentials.service.GameService;
 import com.dchristofolli.webfluxessentials.util.GameCreator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,9 +9,9 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.WebProperties;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -24,12 +22,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 @ExtendWith(SpringExtension.class)
-@WebFluxTest
-@Import({GameService.class, CustomAttributes.class})
+@SpringBootTest
+@AutoConfigureWebTestClient
 class GameControllerIT {
     @MockBean
     private GameRepository gameRepository;
@@ -54,6 +53,9 @@ class GameControllerIT {
             .thenReturn(Mono.just(game));
         BDDMockito.when(gameRepository.save(GameCreator.createGameToBeSaved()))
             .thenReturn(Mono.just(game));
+        BDDMockito.when(gameRepository.saveAll(List.of(GameCreator.createGameToBeSaved(),
+                GameCreator.createGameToBeSaved())))
+            .thenReturn(Flux.just(game, game));
         BDDMockito.when(gameRepository.delete(ArgumentMatchers.any(Game.class)))
             .thenReturn(Mono.empty());
         BDDMockito.when(gameRepository.save(GameCreator.createValidGame()))
@@ -131,6 +133,38 @@ class GameControllerIT {
             .expectStatus().isCreated()
             .expectBody(Game.class)
             .isEqualTo(game);
+    }
+    @Test
+    @DisplayName("saveBatch creates a list of game when successful")
+    void saveBatch_CreatesListOfGame_WhenSuccessful() {
+        var gameToBeSaved = GameCreator.createGameToBeSaved();
+        testClient
+            .post()
+            .uri("/games/batch")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(BodyInserters.fromValue(List.of(gameToBeSaved, gameToBeSaved)))
+            .exchange()
+            .expectStatus().isCreated()
+            .expectBodyList(Game.class)
+            .hasSize(2)
+            .contains(game);
+    }
+    @Test
+    @DisplayName("saveBatch returns mono error when one of games in the list contains null or empty name")
+    void saveBatch_ReturnsMonoError_WhenContainsInvalidName() {
+        var gameToBeSaved = GameCreator.createGameToBeSaved();
+        BDDMockito.when(gameRepository.saveAll(List.of(gameToBeSaved,
+                gameToBeSaved.withName(""))))
+            .thenReturn(Flux.just(game, game.withName("")));
+        testClient
+            .post()
+            .uri("/games/batch")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(BodyInserters.fromValue(List.of(gameToBeSaved, gameToBeSaved.withName(""))))
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(400);
     }
 
     @Test

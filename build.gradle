@@ -23,13 +23,15 @@ dependencies {
     implementation "io.r2dbc:r2dbc-postgresql:${r2dbcPostgresVersion}"
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation "io.projectreactor:reactor-tools"
+    implementation "io.projectreactor.tools:blockhound:${blockHoundVersion}"
     implementation "org.springframework.boot:spring-boot-starter-validation:${springBootVersion}"
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
-    testImplementation "io.projectreactor.tools:blockhound:${blockHoundVersion}"
+    testImplementation "com.h2database:h2:${h2Version}"
+    testImplementation "io.r2dbc:r2dbc-h2:${r2dbcH2Version}"
 }
 
 tasks.named('test') {

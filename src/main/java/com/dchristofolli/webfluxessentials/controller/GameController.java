@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -33,6 +34,13 @@ public class GameController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<Game> save(@Valid @RequestBody Game game) {
         return gameService.save(game);
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping(path = "batch",
+        consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Flux<Game> saveBatch(@RequestBody List<Game> games) {
+        return gameService.saveAll(games);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)

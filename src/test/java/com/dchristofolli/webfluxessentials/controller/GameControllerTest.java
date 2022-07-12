@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -39,16 +40,15 @@ class GameControllerTest {
     void setup() {
         BDDMockito.when(gameService.findAll())
             .thenReturn(Flux.just(game));
-
         BDDMockito.when(gameService.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.just(game));
-
         BDDMockito.when(gameService.save(GameCreator.createGameToBeSaved()))
             .thenReturn(Mono.just(game));
-
+        BDDMockito.when(gameService.saveAll(List.of(GameCreator.createGameToBeSaved(),
+                GameCreator.createGameToBeSaved())))
+            .thenReturn(Flux.just(game, game));
         BDDMockito.when(gameService.delete(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.empty());
-
         BDDMockito.when(gameService.update(GameCreator.createValidGame()))
             .thenReturn(Mono.empty());
     }
@@ -111,6 +111,15 @@ class GameControllerTest {
         Game validGame = GameCreator.createValidGame();
         StepVerifier.create(gameController.update(1, validGame))
             .expectSubscription()
+            .verifyComplete();
+    }
+    @Test
+    @DisplayName("saveBatch creates a list of game when successful")
+    void saveBatch_CreatesListOfGame_WhenSuccessful() {
+        Game gameToBeSaved = GameCreator.createGameToBeSaved();
+        StepVerifier.create(gameController.saveBatch(List.of(gameToBeSaved, gameToBeSaved)))
+            .expectSubscription()
+            .expectNext(game, game)
             .verifyComplete();
     }
 }

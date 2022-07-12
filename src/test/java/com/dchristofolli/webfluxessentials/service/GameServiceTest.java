@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -40,16 +41,15 @@ class GameServiceTest {
     void setup() {
         BDDMockito.when(gameRepository.findAll())
             .thenReturn(Flux.just(game));
-
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.just(game));
-
         BDDMockito.when(gameRepository.save(GameCreator.createGameToBeSaved()))
             .thenReturn(Mono.just(game));
-
+        BDDMockito.when(gameRepository.saveAll(List.of(GameCreator.createGameToBeSaved(),
+                GameCreator.createGameToBeSaved())))
+            .thenReturn(Flux.just(game, game));
         BDDMockito.when(gameRepository.delete(ArgumentMatchers.any(Game.class)))
             .thenReturn(Mono.empty());
-
         BDDMockito.when(gameRepository.save(GameCreator.createValidGame()))
             .thenReturn(Mono.empty());
     }
@@ -108,6 +108,29 @@ class GameServiceTest {
             .expectSubscription()
             .expectNext(game)
             .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("saveAll creates a list of game when successful")
+    void saveAll_CreatesListOfGame_WhenSuccessful() {
+        Game gameToBeSaved = GameCreator.createGameToBeSaved();
+        StepVerifier.create(gameService.saveAll(List.of(gameToBeSaved, gameToBeSaved)))
+            .expectSubscription()
+            .expectNext(game, game)
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("saveAll returns mono error when one of games in the list contains null or empty name")
+    void saveAll_ReturnsMonoError_WhenContainsInvalidName() {
+        Game gameToBeSaved = GameCreator.createGameToBeSaved();
+        BDDMockito.when(gameRepository.saveAll(List.of(gameToBeSaved, gameToBeSaved.withName(""))))
+            .thenReturn(Flux.just(game, game.withName("")));
+        StepVerifier.create(gameService.saveAll(List.of(gameToBeSaved, gameToBeSaved.withName(""))))
+            .expectSubscription()
+            .expectNext(game)
+            .expectError(ResponseStatusException.class)
+            .verify();
     }
 
     @Test

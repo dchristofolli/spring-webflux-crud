@@ -1,7 +1,10 @@
+spring:
+  r2dbc:
+    url: r2dbc:h2:mem://./testdb
+    username: sa
+  profiles:
+    active: test
 logging:
   level:
     org:
       springframework: INFO
-spring:
-  profiles:
-    active: test
