@@ -1,8 +1,11 @@
 package com.dchristofolli.webfluxessentials.integration;
 
 import com.dchristofolli.webfluxessentials.domain.Game;
+import com.dchristofolli.webfluxessentials.domain.User;
 import com.dchristofolli.webfluxessentials.repository.GameRepository;
+import com.dchristofolli.webfluxessentials.service.UserDetailsService;
 import com.dchristofolli.webfluxessentials.util.GameCreator;
+import com.dchristofolli.webfluxessentials.util.WebTestClientUtil;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -13,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -27,16 +31,19 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 class GameControllerIT {
+    @Autowired
+    private WebTestClientUtil webTestClientUtil;
     @MockBean
     private GameRepository gameRepository;
 
     @MockBean
     private WebProperties.Resources resources;
-    @Autowired
-    private WebTestClient testClient;
+    private WebTestClient testClientUser;
+    private WebTestClient testClientAdmin;
+    private WebTestClient testClientInvalid;
 
     private final Game game = GameCreator.createValidGame();
 
@@ -47,6 +54,9 @@ class GameControllerIT {
 
     @BeforeEach
     void setup() {
+        testClientUser = webTestClientUtil.authenticateClient("user", "game");
+        testClientAdmin = webTestClientUtil.authenticateClient("admin", "game");
+        testClientUser = webTestClientUtil.authenticateClient("x", "x");
         BDDMockito.when(gameRepository.findAll())
             .thenReturn(Flux.just(game));
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
@@ -81,7 +91,7 @@ class GameControllerIT {
     @Test
     @DisplayName("findAll returns a flux of game")
     void findAll_ReturnFluxOfGame_WhenSuccessful() {
-        testClient
+        testClientUser
             .get()
             .uri("/games")
             .exchange()
@@ -94,7 +104,7 @@ class GameControllerIT {
     @Test
     @DisplayName("findById returns a mono with game when it exists")
     void findById_ReturnMonoGame_WhenSuccessful() {
-        testClient
+        testClientUser
             .get()
             .uri("/games/{id}", 1)
             .exchange()
@@ -108,7 +118,7 @@ class GameControllerIT {
     void findById_ThrowsException_WhenGameDoesNotExist() {
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.empty());
-        testClient
+        testClientUser
             .get()
             .uri("/games/{id}", 1)
             .exchange()
@@ -124,7 +134,7 @@ class GameControllerIT {
     @DisplayName("save creates a game when successful")
     void save_CreatesGame_WhenSuccessful() {
         var gameToBeSaved = GameCreator.createGameToBeSaved();
-        testClient
+        testClientUser
             .post()
             .uri("/games")
             .contentType(MediaType.APPLICATION_JSON)
@@ -134,11 +144,12 @@ class GameControllerIT {
             .expectBody(Game.class)
             .isEqualTo(game);
     }
+
     @Test
     @DisplayName("saveBatch creates a list of game when successful")
     void saveBatch_CreatesListOfGame_WhenSuccessful() {
         var gameToBeSaved = GameCreator.createGameToBeSaved();
-        testClient
+        testClientUser
             .post()
             .uri("/games/batch")
             .contentType(MediaType.APPLICATION_JSON)
@@ -149,6 +160,7 @@ class GameControllerIT {
             .hasSize(2)
             .contains(game);
     }
+
     @Test
     @DisplayName("saveBatch returns mono error when one of games in the list contains null or empty name")
     void saveBatch_ReturnsMonoError_WhenContainsInvalidName() {
@@ -156,7 +168,7 @@ class GameControllerIT {
         BDDMockito.when(gameRepository.saveAll(List.of(gameToBeSaved,
                 gameToBeSaved.withName(""))))
             .thenReturn(Flux.just(game, game.withName("")));
-        testClient
+        testClientUser
             .post()
             .uri("/games/batch")
             .contentType(MediaType.APPLICATION_JSON)
@@ -171,7 +183,7 @@ class GameControllerIT {
     @DisplayName("save returns mono error with bad request when name is empty")
     void save_ReturnsError_WhenNameIsEmpty() {
         var gameToBeSaved = GameCreator.createGameToBeSaved().withName("");
-        testClient
+        testClientUser
             .post()
             .uri("/games")
             .contentType(MediaType.APPLICATION_JSON)
@@ -186,7 +198,7 @@ class GameControllerIT {
     @Test
     @DisplayName("removes the game when successful")
     void delete_removesGame_WhenSuccessful() {
-        testClient
+        testClientUser
             .delete()
             .uri("/games/{id}", 1)
             .exchange()
@@ -198,7 +210,7 @@ class GameControllerIT {
     void delete_ReturnMonoError_WhenEmptyMonoIsReturned() {
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.empty());
-        testClient
+        testClientUser
             .delete()
             .uri("/games/{id}", 1)
             .exchange()
@@ -211,7 +223,7 @@ class GameControllerIT {
     @Test
     @DisplayName("update save updated game and returns empty mono when successful")
     void update_SaveUpdatedGame_WhenSuccessful() {
-        testClient
+        testClientUser
             .put()
             .uri("/games/{id}", 1)
             .contentType(MediaType.APPLICATION_JSON)
@@ -226,7 +238,7 @@ class GameControllerIT {
         BDDMockito.when(gameRepository.findById(ArgumentMatchers.anyInt()))
             .thenReturn(Mono.empty());
 
-        testClient
+        testClientUser
             .put()
             .uri("/games/{id}", 1)
             .contentType(MediaType.APPLICATION_JSON)

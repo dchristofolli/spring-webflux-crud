@@ -1,7 +1,12 @@
+#spring:
+#  r2dbc:
+#    url: r2dbc:h2:mem://./testdb
+#    username: sa
 spring:
   r2dbc:
-    url: r2dbc:h2:mem://./testdb
-    username: sa
+    url: r2dbc:postgresql://localhost:5432/postgres?schema=game
+    username: root
+    password: root
   profiles:
     active: test
 logging:

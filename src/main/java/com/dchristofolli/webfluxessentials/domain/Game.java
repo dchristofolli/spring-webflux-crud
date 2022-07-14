@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @Builder
 @With
-@Table("game")
+@Table(schema = "game",name = "game")
 public class Game {
     @Id
     private Integer id;
